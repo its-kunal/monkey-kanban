@@ -265,7 +265,8 @@ const KanbanBoard: React.FC = () => {
   const TaskForm = () => (
     <div
       ref={formRef}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className={`fixed inset-0 flex items-center justify-center z-50`}
+      style={{backgroundColor: theme.light}}
     >
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
@@ -395,7 +396,6 @@ const KanbanBoard: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-3 pr-8 py-1 rounded-md text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50"
-              style={{ focusRing: theme.accent }}
             />
             {searchQuery && (
               <button
