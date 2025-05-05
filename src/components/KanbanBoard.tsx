@@ -10,53 +10,11 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import theme from "@/config/theme";
 import { useAuthContext } from "@/hooks/AuthContext";
-
-// Sample initial data
-const initialTasks: Task[] = [
-  {
-    id: "1",
-    title: "Research market trends",
-    description: "Find latest market trends for our product category",
-    status: "todo",
-    priority: "high",
-    dueDate: new Date(2025, 4, 10),
-  },
-  {
-    id: "2",
-    title: "Design new homepage",
-    description: "Create wireframes for the new homepage layout",
-    status: "in-progress",
-    priority: "medium",
-    dueDate: new Date(2025, 4, 15),
-  },
-  {
-    id: "3",
-    title: "Fix navigation bug",
-    description: "Address the issue with dropdown menu in mobile view",
-    status: "in-progress",
-    priority: "high",
-    dueDate: new Date(2025, 4, 6),
-  },
-  {
-    id: "4",
-    title: "Update user documentation",
-    description: "Update the user guide with new features",
-    status: "todo",
-    priority: "low",
-    dueDate: new Date(2025, 4, 20),
-  },
-  {
-    id: "5",
-    title: "Prepare Q2 report",
-    description: "Gather data and prepare quarterly report",
-    status: "done",
-    priority: "medium",
-    dueDate: new Date(2025, 4, 2),
-  },
-];
+import { useTasks } from "@/hooks/useTasks";
 
 const KanbanBoard: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const { data, updateCb, loading: loadingTasks } = useTasks();
+  const [tasks, setTasks] = useState<Task[]>(data);
   const [isAddingTask, setIsAddingTask] = useState<boolean>(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
@@ -90,7 +48,7 @@ const KanbanBoard: React.FC = () => {
       dueDate: newTaskDueDate ? new Date(newTaskDueDate) : undefined,
     };
 
-    setTasks([...tasks, newTask]);
+    setTasks([...data, newTask]);
     resetForm();
     setIsAddingTask(false);
   };
@@ -99,7 +57,7 @@ const KanbanBoard: React.FC = () => {
   const handleUpdateTask = () => {
     if (!editingTask) return;
 
-    const updatedTasks = tasks.map((task) =>
+    const updatedTasks = data.map((task) =>
       task.id === editingTask.id
         ? {
             ...editingTask,
@@ -118,7 +76,7 @@ const KanbanBoard: React.FC = () => {
   };
 
   const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+    setTasks(data.filter((task) => task.id !== id));
   };
 
   const handleEditTask = (task: Task) => {
@@ -140,21 +98,15 @@ const KanbanBoard: React.FC = () => {
     setNewTaskDueDate("");
   };
 
-  // Click outside handler to close form
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        setIsAddingTask(false);
-        setEditingTask(null);
-        resetForm();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+    if (
+      !loadingTasks &&
+      tasks.length > 0 &&
+      JSON.stringify(tasks) !== JSON.stringify(data)
+    ) {
+      updateCb(tasks);
+    }
+  }, [data, loadingTasks, tasks, updateCb]);
 
   // Drag and drop handlers
   const handleDragStart = (task: Task) => {
@@ -168,7 +120,7 @@ const KanbanBoard: React.FC = () => {
   const handleDrop = (status: TaskStatus) => {
     if (!draggedTask) return;
 
-    const updatedTasks = tasks.map((task) =>
+    const updatedTasks = data.map((task) =>
       task.id === draggedTask.id ? { ...task, status } : task
     );
 
@@ -176,14 +128,14 @@ const KanbanBoard: React.FC = () => {
     setDraggedTask(null);
   };
 
-  // Filter tasks based on search query
-  const filteredTasks = tasks.filter(
+  // Filter data based on search query
+  const filteredTasks = data.filter(
     (task) =>
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Group tasks by status
+  // Group data by status
   const todoTasks = filteredTasks.filter((task) => task.status === "todo");
   const inProgressTasks = filteredTasks.filter(
     (task) => task.status === "in-progress"
@@ -257,8 +209,10 @@ const KanbanBoard: React.FC = () => {
             </label>
             <input
               type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
+              defaultValue={newTaskTitle}
+              onChange={(e) => {
+                setNewTaskTitle(e.target.value);
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               placeholder="Task title"
             />
@@ -269,8 +223,10 @@ const KanbanBoard: React.FC = () => {
               Description
             </label>
             <textarea
-              value={newTaskDescription}
-              onChange={(e) => setNewTaskDescription(e.target.value)}
+              defaultValue={newTaskDescription}
+              onChange={(e) => {
+                setNewTaskDescription(e.target.value);
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               rows={3}
               placeholder="Task description"
@@ -283,8 +239,10 @@ const KanbanBoard: React.FC = () => {
                 Status
               </label>
               <select
-                value={newTaskStatus}
-                onChange={(e) => setNewTaskStatus(e.target.value as TaskStatus)}
+                defaultValue={newTaskStatus}
+                onChange={(e) => {
+                  setNewTaskStatus(e.target.value as TaskStatus);
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
                 <option value="todo">To Do</option>
@@ -318,7 +276,9 @@ const KanbanBoard: React.FC = () => {
             <input
               type="date"
               value={newTaskDueDate}
-              onChange={(e) => setNewTaskDueDate(e.target.value)}
+              onChange={(e) => {
+                setNewTaskDueDate(e.target.value);
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
