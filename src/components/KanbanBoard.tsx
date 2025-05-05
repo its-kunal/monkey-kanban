@@ -1,12 +1,15 @@
 "use client";
 
-import { Monitor, Plus, Settings, X } from "lucide-react";
+import { Monitor, Plus, Power, Settings, X } from "lucide-react";
 import { Task, TaskPriority, TaskStatus } from "@/types/Task";
 import { formatDate, generateId } from "@/lib/common";
 import { useEffect, useRef, useState } from "react";
 
 import { PriorityBadge } from "./PriorityBadge";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
 import theme from "@/config/theme";
+import { useAuthContext } from "@/hooks/AuthContext";
 
 // Sample initial data
 const initialTasks: Task[] = [
@@ -69,6 +72,12 @@ const KanbanBoard: React.FC = () => {
 
   // Ref for form
   const formRef = useRef<HTMLDivElement>(null);
+
+  const { loading } = useAuthContext();
+
+  const logoutCb = async () => {
+    await signOut(auth);
+  };
 
   // Handler for adding a new task
   const handleAddTask = () => {
@@ -342,16 +351,16 @@ const KanbanBoard: React.FC = () => {
       >
         <div className="flex items-center">
           <Monitor className="mr-2" size={24} />
-          <h1 className="text-xl font-semibold">Kanban Board</h1>
+          <h1 className="text-xl font-semibold break-words">Kanban Board</h1>
         </div>
         <div className="flex items-center gap-4">
-          <div className="relative">
+          <div className="relative hidden md:block">
             <input
               type="text"
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-3 pr-8 py-1 rounded-md text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50"
+              className="pl-3 pr-8 py-[2px] rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 outline-1"
             />
             {searchQuery && (
               <button
@@ -369,6 +378,9 @@ const KanbanBoard: React.FC = () => {
           >
             <Plus size={16} className="mr-1" />
             Add Task
+          </button>
+          <button onClick={logoutCb} disabled={loading}>
+            <Power />
           </button>
         </div>
       </header>
